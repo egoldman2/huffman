@@ -2,9 +2,27 @@
 
 A C++17 project for **Programming Assignment 1 — Track B: Implementation and Building Something**. Implement Huffman coding and use it to build a lossless file compressor with a basic interactive command-line interface.
 
-**Status:** planning only. The executable, build configuration and tests have not been implemented. The interface below describes the intended behavior.
+**Status:** experimental scaffold. The menu and byte-frequency counter are in place; compression, decompression and archive handling are not implemented yet.
 
-## Run without arguments
+## Current scaffold
+
+Compile and run directly with a C++17 compiler:
+
+```sh
+c++ -std=c++17 -Isrc src/main.cpp src/huffman.cpp -o huff
+./huff
+```
+
+The program opens in the terminal's alternate screen and restores the previous terminal contents when it exits. It currently displays the planned menu, handles invalid choices and exits with `0` or end-of-input. Compression, decompression and inspection choices are placeholders.
+
+The implemented Huffman work is limited to counting all 256 possible byte values. Run its small binary-input test with:
+
+```sh
+c++ -std=c++17 -Isrc tests/test_huffman.cpp src/huffman.cpp -o huffman_tests
+./huffman_tests
+```
+
+## Planned interface
 
 ```sh
 ./huff
@@ -24,9 +42,9 @@ Huffman File Compressor
 Choose an option:
 ```
 
-The program prompts for input and output paths after an operation is selected. After completion or a recoverable error, it returns to the menu.
+The completed program will prompt for input and output paths after an operation is selected. After completion or a recoverable error, it will return to the menu.
 
-### Example interaction
+### Planned example interaction
 
 ```text
 Choose an option: 1
@@ -60,10 +78,6 @@ Compression can increase file size when metadata outweighs payload savings. Stat
 Count byte frequencies, repeatedly merge the two least frequent trees, and assign codes from root-to-leaf paths. Write the tree and packed payload into the archive. Decompression reconstructs the tree and follows the bits to recover the original bytes.
 
 Use the C++ standard library, including a minimum-priority queue. The menu calls reusable compression and decompression functions so those operations can also be tested and benchmarked directly.
-
-## Build and tests
-
-A C++17 compiler will be required. Exact build, test and benchmark commands will be added and verified once implementation exists.
 
 ## Documentation
 
