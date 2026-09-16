@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <istream>
+#include <vector>
 
 namespace huffman {
 
