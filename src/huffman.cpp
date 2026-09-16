@@ -55,17 +55,40 @@ std::vector<Node> create_tree(const FrequencyTable frequencies) {
     }
 
     // while the queue contains more than one node:
-    //     remove the two nodes with the lowest frequencies
+    while (queue.size() > 1) {
 
-    //     create a parent:
-    //         frequency = left frequency + right frequency
-    //         symbol = -1
-    //         left = first node position
-    //         right = second node position
+        // remove the two nodes with the lowest frequencies
+        // store the indicies
+        int left_index = queue.top().second;
+        queue.pop();
 
-    //     add the parent to the queue
+        int right_index = queue.top().second;
+        queue.pop();
 
-    // the final queue entry is the root
+        // calculate combined frequency
+        // this is used for the parent node of the popped nodes
+        const std::uint64_t combined_frequency = nodes[left_index].frequency + nodes[right_index].frequency;
+
+        // get the current node size
+        // this is important as we always add the parent node to the end
+        // the results in the last parent node always representing the top of the whole tree
+        const int parent_index = static_cast<int>(nodes.size());
+
+        // create a parent:
+        nodes.push_back(Node{
+            combined_frequency, // frequency = left frequency + right frequency
+            -1, // symbol = -1, as the parent node does not represent a symbol
+            left_index, // left = first node position
+            right_index // right = second node position
+        });
+
+        // add the parent to the queue 
+        queue.push({combined_frequency, parent_index});
+    }
+
+    return nodes;
+
+    
 }
 
 
