@@ -15,12 +15,19 @@ c++ -std=c++17 -Isrc src/main.cpp src/huffman.cpp -o huff
 
 The program opens in the terminal's alternate screen and restores the previous terminal contents when it exits. It currently displays the planned menu, handles invalid choices and exits with `0` or end-of-input. Compression, decompression and inspection choices are placeholders.
 
-The implemented Huffman work is limited to counting all 256 possible byte values. Run its small binary-input test with:
+The tests use GoogleTest. Install it once:
 
 ```sh
-c++ -std=c++17 -Isrc tests/test_huffman.cpp src/huffman.cpp -o huffman_tests
-./huffman_tests
+brew install googletest
 ```
+
+Then, from this folder, compile and run the tests with one command:
+
+```sh
+c++ -std=c++17 -Isrc -I"$(brew --prefix googletest)/include" tests/test_huffman.cpp src/huffman.cpp -L"$(brew --prefix googletest)/lib" -lgtest_main -lgtest -pthread -o huffman_tests && ./huffman_tests
+```
+
+GoogleTest runs every test even when one fails and prints the failure reason, time per test and total time automatically.
 
 ## Planned interface
 
