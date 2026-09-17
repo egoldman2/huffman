@@ -136,4 +136,20 @@ namespace huffman {
         return codes;
     }
 
+    std::string encode(
+        const std::string& input,
+        const CodeTable& codes
+    ) {
+        std::string bits;
+
+        for (char byte : input) {
+            const auto symbol = static_cast<unsigned char>(byte);
+
+            // Append the Huffman code for this byte.
+            bits += codes[symbol];
+        }
+
+        return bits;
+    }
+
 }

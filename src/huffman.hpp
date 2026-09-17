@@ -35,4 +35,21 @@ namespace huffman {
     // Creates binary code values for all the nodes in the tree
     CodeTable create_codes(const std::vector<Node>& tree);
 
+    // Encode an input string into a binary, huffman string
+    std::string encode(
+        const std::string& input,
+        const CodeTable& codes
+    );
+
+    // Decode a binary, huffman string, back into data
+    std::string decode(
+        const std::string& bits,
+        const std::vector<Node>& tree
+    );
+
+    // Pack bits into actual bytes so that it actually stores raw bytes
+    std::vector<unsigned char> pack_bits(
+        const std::string& bits
+    );
+
 }  // namespace huffman
