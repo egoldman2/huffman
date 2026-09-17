@@ -5,14 +5,14 @@
 #include <cstdint>
 #include <istream>
 #include <vector>
+#include <functional>
+#include <queue>
+#include <utility>
 
 namespace huffman {
 
     constexpr std::size_t alphabet_size = 256;
     using FrequencyTable = std::array<std::uint64_t, alphabet_size>;
-
-    // Counts raw byte values, so this works for text and binary input.
-    FrequencyTable count_frequencies(std::istream& input);
 
     // struct for representing a node in the tree
     struct Node {
@@ -21,5 +21,11 @@ namespace huffman {
         int left = -1; // index left child, default -1, representing no child
         int right = -1; // index left child, default -1, representing no child
     };
+
+    // Counts raw byte values, so this works for text and binary input.
+    FrequencyTable count_frequencies(std::istream& input);
+
+    // Creates a tree from a frequency table
+    std::vector<Node> create_tree(const FrequencyTable& frequencies);
 
 }  // namespace huffman

@@ -14,7 +14,7 @@ FrequencyTable count_frequencies(std::istream& input) {
     return frequencies;
 }
 
-std::vector<Node> create_tree(const FrequencyTable frequencies) {
+std::vector<Node> create_tree(const FrequencyTable& frequencies) {
     // frequency, node index
     using QueueItem = std::pair<std::uint64_t, int>;
 
@@ -87,8 +87,6 @@ std::vector<Node> create_tree(const FrequencyTable frequencies) {
     }
 
     return nodes;
-
-    
 }
 
 
