@@ -101,6 +101,28 @@ void test_code_generation() {
            "assigns N the code 11");
 }
 
+void test_bit_packing() {
+    expect(huffman::pack_bits("").empty(),
+           "packs an empty bit string");
+
+    const auto partial = huffman::pack_bits("101");
+
+    expect(partial.size() == 1,
+           "packs a partial byte");
+    expect(partial[0] == 0b10100000,
+           "pads a partial byte on the right");
+
+    const auto example =
+        huffman::pack_bits("111110000010011");
+
+    expect(example.size() == 2,
+           "packs bits across two bytes");
+    expect(example[0] == 0xF8,
+           "packs the first complete byte");
+    expect(example[1] == 0x26,
+           "right-pads the final seven bits");
+}
+
 void run_test(const std::string& name, void (*test)()) {
     std::cout << "\n" << name << '\n';
 
@@ -125,6 +147,7 @@ int main() {
     run_test("Single-symbol tree", test_single_symbol_tree);
     run_test("BANANA tree", test_banana_tree);
     run_test("Code generation", test_code_generation);
+    run_test("Bit packing", test_bit_packing);
 
     const auto total_elapsed = std::chrono::duration<double, std::milli>(
         Clock::now() - total_start);

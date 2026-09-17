@@ -9,6 +9,7 @@
 #include <queue>
 #include <utility>
 #include <string>
+#include <bitset>
 
 namespace huffman {
 
