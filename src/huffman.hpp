@@ -8,11 +8,15 @@
 #include <functional>
 #include <queue>
 #include <utility>
+#include <string>
 
 namespace huffman {
 
     constexpr std::size_t alphabet_size = 256;
     using FrequencyTable = std::array<std::uint64_t, alphabet_size>;
+
+    // string stores the binary value, index is the symbol value
+    using CodeTable = std::array<std::string, alphabet_size>;
 
     // struct for representing a node in the tree
     struct Node {
@@ -27,5 +31,8 @@ namespace huffman {
 
     // Creates a tree from a frequency table
     std::vector<Node> create_tree(const FrequencyTable& frequencies);
+
+    // Creates binary code values for all the nodes in the tree
+    CodeTable create_codes(const std::vector<Node>& tree);
 
 }  // namespace huffman

@@ -54,6 +54,10 @@ void test_single_symbol_tree() {
            "preserves a single symbol's byte value");
     expect(single_tree.back().left == -1 && single_tree.back().right == -1,
            "gives a leaf no children");
+
+    const auto single_codes = huffman::create_codes(single_tree);
+    expect(single_codes[static_cast<unsigned char>('X')] == "0",
+           "assigns code 0 to the only symbol");
 }
 
 void test_banana_tree() {
@@ -77,7 +81,24 @@ void test_banana_tree() {
            "stores valid child indexes at the root");
     expect(banana_tree[root.left].frequency + banana_tree[root.right].frequency ==
                root.frequency,
-           "makes the root frequency equal its children's sum");
+               "makes the root frequency equal its children's sum");
+}
+
+void test_code_generation() {
+    huffman::FrequencyTable frequencies{};
+    frequencies[static_cast<unsigned char>('A')] = 3;
+    frequencies[static_cast<unsigned char>('N')] = 2;
+    frequencies[static_cast<unsigned char>('B')] = 1;
+
+    const auto tree = huffman::create_tree(frequencies);
+    const auto codes = huffman::create_codes(tree);
+
+    expect(codes[static_cast<unsigned char>('A')] == "0",
+           "assigns A the code 0");
+    expect(codes[static_cast<unsigned char>('B')] == "10",
+           "assigns B the code 10");
+    expect(codes[static_cast<unsigned char>('N')] == "11",
+           "assigns N the code 11");
 }
 
 void run_test(const std::string& name, void (*test)()) {
@@ -103,6 +124,7 @@ int main() {
     run_test("Empty tree", test_empty_tree);
     run_test("Single-symbol tree", test_single_symbol_tree);
     run_test("BANANA tree", test_banana_tree);
+    run_test("Code generation", test_code_generation);
 
     const auto total_elapsed = std::chrono::duration<double, std::milli>(
         Clock::now() - total_start);
