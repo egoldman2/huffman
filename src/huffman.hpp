@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <istream>
+#include <ostream>
 #include <vector>
 #include <functional>
 #include <queue>
@@ -35,6 +36,12 @@ namespace huffman {
 
     // Creates binary code values for all the nodes in the tree
     CodeTable create_codes(const std::vector<Node>& tree);
+
+    // Save a tree from create_tree or read_tree using the HUF1 markers
+    void write_tree(std::ostream& output, const std::vector<Node>& tree);
+
+    // Load a tree using the symbol count from the archive header
+    std::vector<Node> read_tree(std::istream& input, std::size_t symbol_count);
 
     // Encode an input string into a binary, huffman string
     std::string encode(

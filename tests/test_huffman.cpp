@@ -169,3 +169,94 @@ TEST(RoundTrip, RestoresInputAfterPackingAndUnpacking) {
         EXPECT_EQ(huffman::decode(unpacked, tree), original);
     }
 }
+
+TEST(TreeStorage, WritesTheDocumentedBananaBytes) {
+    std::istringstream input("BANANA");
+    const auto tree = huffman::create_tree(huffman::count_frequencies(input));
+    std::ostringstream saved;
+    huffman::write_tree(saved, tree);
+
+    const std::string expected = {0, 1, 'A', 0, 1, 'B', 1, 'N'};
+    EXPECT_EQ(saved.str(), expected);
+}
+
+TEST(TreeStorage, LoadsKnownBytesAndLeavesThePayloadUnread) {
+    const std::string bytes = {0, 1, 'A', 0, 1, 'B', 1, 'N', 'P'};
+    std::istringstream saved(bytes);
+    const auto tree = huffman::read_tree(saved, 3);
+
+    ASSERT_EQ(tree.size(), std::size_t{5});
+    EXPECT_EQ(tree.back().symbol, -1);
+    EXPECT_EQ(huffman::decode("100110110", tree), "BANANA");
+    EXPECT_EQ(saved.get(), 'P');
+}
+
+TEST(TreeStorage, HandlesEmptyTreesWithoutReadingData) {
+    std::ostringstream output;
+    huffman::write_tree(output, {});
+    EXPECT_TRUE(output.str().empty());
+
+    std::istringstream input("P");
+    EXPECT_TRUE(huffman::read_tree(input, 0).empty());
+    EXPECT_EQ(input.get(), 'P');
+}
+
+TEST(TreeStorage, PreservesCodesAndBinarySymbols) {
+    const std::vector<std::string> examples = {
+        "XXXX", "BANANA", std::string{0, 1, static_cast<char>(0xFF)}
+    };
+
+    for (const std::string& original : examples) {
+        SCOPED_TRACE(::testing::PrintToString(original));
+        std::istringstream input(original);
+        const auto frequencies = huffman::count_frequencies(input);
+        const auto tree = huffman::create_tree(frequencies);
+        std::size_t symbol_count = 0;
+        for (auto frequency : frequencies) {
+            if (frequency != 0) {
+                ++symbol_count;
+            }
+        }
+
+        std::ostringstream output;
+        huffman::write_tree(output, tree);
+        std::istringstream saved(output.str());
+        const auto restored_tree = huffman::read_tree(saved, symbol_count);
+        const auto codes = huffman::create_codes(tree);
+
+        EXPECT_EQ(huffman::create_codes(restored_tree), codes);
+        EXPECT_EQ(huffman::decode(huffman::encode(original, codes), restored_tree), original);
+    }
+}
+
+TEST(TreeStorage, RejectsMalformedTrees) {
+    std::istringstream invalid_marker(std::string{2});
+    EXPECT_THROW(huffman::read_tree(invalid_marker, 1), std::runtime_error);
+
+    std::istringstream truncated_leaf(std::string{1});
+    EXPECT_THROW(huffman::read_tree(truncated_leaf, 1), std::runtime_error);
+
+    std::istringstream missing_child(std::string{0, 1, 'A'});
+    EXPECT_THROW(huffman::read_tree(missing_child, 2), std::runtime_error);
+
+    std::istringstream duplicate(std::string{0, 1, 'A', 1, 'A'});
+    EXPECT_THROW(huffman::read_tree(duplicate, 2), std::runtime_error);
+
+    std::istringstream wrong_count(std::string{1, 'A'});
+    EXPECT_THROW(huffman::read_tree(wrong_count, 2), std::runtime_error);
+
+    std::istringstream too_many_nodes(std::string{0, 0, 0});
+    EXPECT_THROW(huffman::read_tree(too_many_nodes, 2), std::runtime_error);
+
+    std::istringstream too_many_symbols;
+    EXPECT_THROW(huffman::read_tree(too_many_symbols, 257), std::runtime_error);
+}
+
+TEST(TreeStorage, ReportsWriteFailures) {
+    std::istringstream input("X");
+    const auto tree = huffman::create_tree(huffman::count_frequencies(input));
+    std::ostringstream output;
+    output.setstate(std::ios::badbit);
+
+    EXPECT_THROW(huffman::write_tree(output, tree), std::runtime_error);
+}

@@ -85,9 +85,3 @@ Compression can increase file size when metadata outweighs payload savings. Stat
 Count byte frequencies, repeatedly merge the two least frequent trees, and assign codes from root-to-leaf paths. Write the tree and packed payload into the archive. Decompression reconstructs the tree and follows the bits to recover the original bytes.
 
 Use the C++ standard library, including a minimum-priority queue. The menu calls reusable compression and decompression functions so those operations can also be tested and benchmarked directly.
-
-## Documentation
-
-See [the full project plan](PLAN.md) for design decisions, all implementation checkpoints, testing, gzip evaluation, report requirements, the video and the submission checklist.
-
-The final submission includes the working repository, interactive tool, written report and a 3–5 minute video walkthrough.
