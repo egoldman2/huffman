@@ -9,11 +9,13 @@ A C++17 project for **Programming Assignment 1 — Track B: Implementation and B
 Compile and run directly with a C++17 compiler:
 
 ```sh
-c++ -std=c++17 -Isrc src/main.cpp src/huffman.cpp src/tree_io.cpp src/archive.cpp src/file_ops.cpp -o huff
+c++ -std=c++17 -pthread -Isrc src/main.cpp src/huffman.cpp src/tree_io.cpp src/archive.cpp src/file_ops.cpp -o huff
 ./huff
 ```
 
 The program opens in the terminal's alternate screen and restores the previous terminal contents when it exits. Choose `1` to compress or `2` to decompress, enter an input path, and press Enter to accept the output default or enter another path. Results stay visible until you press Enter to return to the menu. Choose `0` or send end-of-input to exit.
+
+Compression and decompression show a live elapsed timer, refreshed every 0.1 seconds, and a final time taken in seconds. Timing starts after the prompts and includes file opening, processing and finalizing the output; it excludes time spent entering paths or confirming replacement.
 
 The tests use GoogleTest. Install it once:
 

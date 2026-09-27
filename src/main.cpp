@@ -1,9 +1,12 @@
 #include "file_ops.hpp"
 
+#include <chrono>
 #include <filesystem>
+#include <future>
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <utility>
 
 namespace {
 
@@ -111,9 +114,28 @@ bool run_file_operation(bool decompressing) {
         }
     }
 
-    const auto header = decompressing
-        ? huffman::decompress_file(source, destination, overwrite)
-        : huffman::compress_file(source, destination, overwrite);
+    // run the file operation in the background so the menu can display elapsed time
+    using Clock = std::chrono::steady_clock;
+    const auto start = Clock::now();
+    auto operation = std::async(std::launch::async, [=] {
+        const auto header = decompressing
+            ? huffman::decompress_file(source, destination, overwrite)
+            : huffman::compress_file(source, destination, overwrite);
+        const double seconds = std::chrono::duration<double>(Clock::now() - start).count();
+        return std::make_pair(header, seconds);
+    });
+
+    const char* action = decompressing ? "Decompressing" : "Compressing";
+    std::cout << action << "... elapsed: 0.00 s" << std::flush;
+    while (operation.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready) {
+        const double seconds = std::chrono::duration<double>(Clock::now() - start).count();
+        std::cout << "\r\033[2K" << action << "... elapsed: "
+                  << std::fixed << std::setprecision(2) << seconds << " s" << std::flush;
+    }
+
+    // clear the live timer before printing results or an error
+    std::cout << "\r\033[2K" << std::flush;
+    const auto [header, seconds] = operation.get();
 
     std::cout << (decompressing ? "Decompression complete.\n" : "Compression complete.\n")
               << "Saved to: " << destination << '\n';
@@ -122,6 +144,7 @@ bool run_file_operation(bool decompressing) {
     } else {
         std::cout << "Original size: " << header.original_size << " bytes\n";
     }
+    std::cout << "Time taken: " << std::fixed << std::setprecision(3) << seconds << " s\n";
 
     return true;
 }
