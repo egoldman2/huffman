@@ -23,4 +23,8 @@ namespace huffman {
     // Output must be a separate stream; errors may leave a partial archive
     ArchiveHeader compress(std::istream& input, std::ostream& output);
 
+    // Restore one archive into a separate output stream
+    // Errors may leave partial output; file callers must use temporary output
+    ArchiveHeader decompress(std::istream& input, std::ostream& output);
+
 }

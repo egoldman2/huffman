@@ -182,4 +182,80 @@ namespace huffman {
         return header;
     }
 
+    ArchiveHeader decompress(std::istream& input, std::ostream& output) {
+        const auto header = read_header(input);
+        const auto tree = read_tree(input, header.symbol_count);
+
+        if (!output) {
+            throw std::runtime_error("could not write the restored bytes");
+        }
+
+        // keep our tree position between bytes because codes can cross byte boundaries
+        const int root_index = static_cast<int>(tree.size()) - 1;
+        int current_index = root_index;
+        std::uint64_t bits_remaining = header.bit_count;
+        std::uint64_t bytes_written = 0;
+
+        while (bits_remaining != 0) {
+            char byte = 0;
+            if (!input.get(byte)) {
+                throw std::runtime_error("compressed payload is incomplete or unreadable");
+            }
+            const auto bits = std::bitset<8>(static_cast<unsigned char>(byte)).to_string();
+            const int meaningful_bits = bits_remaining >= 8 ? 8 : static_cast<int>(bits_remaining);
+
+            for (int i = 0; i < meaningful_bits; ++i) {
+                if (header.symbol_count == 1) {
+                    // a single leaf has no children and uses one zero bit per symbol
+                    if (bits[i] != '0') {
+                        throw std::runtime_error("single-symbol payload must contain only zeros");
+                    }
+                } else if (bits[i] == '0') {
+                    current_index = tree[current_index].left;
+                } else {
+                    current_index = tree[current_index].right;
+                }
+
+                // reaching a leaf completes one original byte
+                if (tree[current_index].symbol != -1) {
+                    if (bytes_written == header.original_size) {
+                        throw std::runtime_error("payload produces too many restored bytes");
+                    }
+                    output.put(static_cast<char>(tree[current_index].symbol));
+                    if (!output) {
+                        throw std::runtime_error("could not write the restored bytes");
+                    }
+                    ++bytes_written;
+                    current_index = root_index;
+                }
+            }
+
+            // any bits beyond the recorded count must be zero padding
+            for (int i = meaningful_bits; i < 8; ++i) {
+                if (bits[i] != '0') {
+                    throw std::runtime_error("compressed payload has nonzero padding");
+                }
+            }
+            bits_remaining -= meaningful_bits;
+        }
+
+        if (current_index != root_index) {
+            throw std::runtime_error("compressed payload ends with an incomplete symbol");
+        }
+        if (bytes_written != header.original_size) {
+            throw std::runtime_error("restored size does not match the archive header");
+        }
+
+        // HUF1 stores exactly one archive, with no extra bytes after the payload
+        char extra = 0;
+        if (input.get(extra)) {
+            throw std::runtime_error("archive contains trailing data");
+        }
+        if (input.bad() || !input.eof()) {
+            throw std::runtime_error("could not read the end of the archive");
+        }
+
+        return header;
+    }
+
 }

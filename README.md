@@ -2,7 +2,7 @@
 
 A C++17 project for **Programming Assignment 1 — Track B: Implementation and Building Something**. Implement Huffman coding and use it to build a lossless file compressor with a basic interactive command-line interface.
 
-**Status:** Huffman encoding/decoding, bit packing, tree storage, archive headers and stream compression are implemented. File-path handling, archive decompression and the menu operations remain unfinished.
+**Status:** Huffman encoding/decoding, bit packing, tree storage, archive headers and stream compression/decompression are implemented. File-path handling and the menu operations remain unfinished.
 
 ## Current scaffold
 

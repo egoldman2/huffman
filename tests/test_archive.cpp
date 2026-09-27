@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -181,4 +182,131 @@ TEST(Compression, ReportsUnreadableInputAndWriteFailures) {
     std::istringstream input("BANANA");
     output.setstate(std::ios::badbit);
     EXPECT_THROW(huffman::compress(input, output), std::runtime_error);
+}
+
+TEST(Decompression, ReadsTheDocumentedBananaArchive) {
+    const std::string bytes = {
+        'H', 'U', 'F', '1',
+        6, 0, 0, 0, 0, 0, 0, 0,
+        3, 0,
+        9, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 'A', 0, 1, 'B', 1, 'N',
+        static_cast<char>(0x9B), 0
+    };
+    std::istringstream input(bytes);
+    std::ostringstream output;
+    const auto header = huffman::decompress(input, output);
+
+    EXPECT_EQ(output.str(), "BANANA");
+    EXPECT_EQ(header.original_size, std::uint64_t{6});
+}
+
+TEST(Decompression, RestoresEmptySingleSymbolAndBinaryArchives) {
+    std::string alphabet;
+    for (int symbol = 0; symbol < 256; ++symbol) {
+        alphabet += static_cast<char>(symbol);
+    }
+    const std::vector<std::string> examples = {
+        "", "A", std::string(7, 'X'), std::string(8, 'X'),
+        std::string(9, 'X'), std::string(17, 'X'), "BANANA",
+        alphabet, alphabet + std::string(10000, 'A')
+    };
+
+    for (const auto& original : examples) {
+        SCOPED_TRACE(original.size());
+        std::istringstream input(original);
+        std::ostringstream archive;
+        huffman::compress(input, archive);
+        std::istringstream saved(archive.str());
+        std::ostringstream restored;
+        huffman::decompress(saved, restored);
+
+        EXPECT_EQ(restored.str(), original);
+    }
+}
+
+TEST(Decompression, RestoresSeededRandomInputs) {
+    std::mt19937 generator(42);
+    for (int length = 0; length < 100; ++length) {
+        SCOPED_TRACE(length);
+        std::string original;
+        for (int i = 0; i < length; ++i) {
+            original += static_cast<char>(generator() % 256);
+        }
+        std::istringstream input(original);
+        std::ostringstream archive;
+        huffman::compress(input, archive);
+        std::istringstream saved(archive.str());
+        std::ostringstream restored;
+        huffman::decompress(saved, restored);
+
+        EXPECT_EQ(restored.str(), original);
+    }
+}
+
+TEST(Decompression, RejectsEveryTruncatedArchive) {
+    std::istringstream input("BANANA");
+    std::ostringstream archive;
+    huffman::compress(input, archive);
+    const auto bytes = archive.str();
+
+    for (std::size_t length = 0; length < bytes.size(); ++length) {
+        SCOPED_TRACE(length);
+        std::istringstream saved(bytes.substr(0, length));
+        std::ostringstream output;
+        EXPECT_THROW(huffman::decompress(saved, output), std::runtime_error);
+    }
+}
+
+TEST(Decompression, RejectsPaddingTrailingDataAndWrongSizes) {
+    std::istringstream input("BANANA");
+    std::ostringstream archive;
+    huffman::compress(input, archive);
+    const auto valid = archive.str();
+
+    auto bad_padding = valid;
+    bad_padding.back() = 1;
+    auto too_few_bytes = valid;
+    too_few_bytes[4] = 7;
+    auto too_many_bytes = valid;
+    too_many_bytes[4] = 5;
+    auto incomplete_symbol = valid;
+    incomplete_symbol[14] = 8;
+
+    const std::vector<std::string> invalid_archives = {
+        bad_padding, valid + "extra", too_few_bytes, too_many_bytes, incomplete_symbol,
+        "HUF1" + std::string(18, '\0') + "extra"
+    };
+    for (std::size_t i = 0; i < invalid_archives.size(); ++i) {
+        SCOPED_TRACE(i);
+        std::istringstream saved(invalid_archives[i]);
+        std::ostringstream output;
+        EXPECT_THROW(huffman::decompress(saved, output), std::runtime_error);
+    }
+}
+
+TEST(Decompression, RejectsInvalidSingleSymbolBitsAndMalformedTrees) {
+    std::istringstream input("XXXX");
+    std::ostringstream archive;
+    huffman::compress(input, archive);
+    auto bytes = archive.str();
+    bytes.back() = static_cast<char>(0x80);
+    std::istringstream invalid_bits(bytes);
+    std::ostringstream output;
+    EXPECT_THROW(huffman::decompress(invalid_bits, output), std::runtime_error);
+
+    bytes = archive.str();
+    bytes[22] = 2;
+    std::istringstream invalid_tree(bytes);
+    EXPECT_THROW(huffman::decompress(invalid_tree, output), std::runtime_error);
+}
+
+TEST(Decompression, ReportsWriteFailures) {
+    std::istringstream input("BANANA");
+    std::ostringstream archive;
+    huffman::compress(input, archive);
+    std::istringstream saved(archive.str());
+    std::ostringstream output;
+    output.setstate(std::ios::badbit);
+    EXPECT_THROW(huffman::decompress(saved, output), std::runtime_error);
 }
