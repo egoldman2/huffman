@@ -2,18 +2,18 @@
 
 A C++17 project for **Programming Assignment 1 — Track B: Implementation and Building Something**. Implement Huffman coding and use it to build a lossless file compressor with a basic interactive command-line interface.
 
-**Status:** Huffman encoding/decoding, bit packing, tree storage, archive headers and stream compression/decompression are implemented. File-path handling and the menu operations remain unfinished.
+**Status:** file compression and decompression work through the menu, with overwrite confirmation and temporary-output protection. Archive inspection is not implemented yet; benchmarks and submission documentation remain unfinished.
 
-## Current scaffold
+## Build and run
 
 Compile and run directly with a C++17 compiler:
 
 ```sh
-c++ -std=c++17 -Isrc src/main.cpp src/huffman.cpp src/tree_io.cpp src/archive.cpp -o huff
+c++ -std=c++17 -Isrc src/main.cpp src/huffman.cpp src/tree_io.cpp src/archive.cpp src/file_ops.cpp -o huff
 ./huff
 ```
 
-The program opens in the terminal's alternate screen and restores the previous terminal contents when it exits. It currently displays the planned menu, handles invalid choices and exits with `0` or end-of-input. Compression, decompression and inspection choices are placeholders.
+The program opens in the terminal's alternate screen and restores the previous terminal contents when it exits. Choose `1` to compress or `2` to decompress, enter an input path, and press Enter to accept the output default or enter another path. Results stay visible until you press Enter to return to the menu. Choose `0` or send end-of-input to exit.
 
 The tests use GoogleTest. Install it once:
 
@@ -24,12 +24,12 @@ brew install googletest
 Then, from this folder, compile and run the tests with one command:
 
 ```sh
-c++ -std=c++17 -Isrc -I"$(brew --prefix googletest)/include" tests/test_huffman.cpp tests/test_archive.cpp src/huffman.cpp src/tree_io.cpp src/archive.cpp -L"$(brew --prefix googletest)/lib" -lgtest_main -lgtest -pthread -o huffman_tests && ./huffman_tests
+c++ -std=c++17 -Isrc -I"$(brew --prefix googletest)/include" tests/test_huffman.cpp tests/test_archive.cpp tests/test_file_ops.cpp src/huffman.cpp src/tree_io.cpp src/archive.cpp src/file_ops.cpp -L"$(brew --prefix googletest)/lib" -lgtest_main -lgtest -pthread -o huffman_tests && ./huffman_tests
 ```
 
 GoogleTest runs every test even when one fails and prints the failure reason, time per test and total time automatically.
 
-## Planned interface
+## Interface
 
 ```sh
 ./huff
@@ -49,9 +49,9 @@ Huffman File Compressor
 Choose an option:
 ```
 
-The completed program will prompt for input and output paths after an operation is selected. After completion or a recoverable error, it will return to the menu.
+Compression and decompression prompt for input and output paths. After completion or a recoverable error, press Enter to return to the menu. Option `3` is still a placeholder.
 
-### Planned example interaction
+### Example interaction
 
 ```text
 Choose an option: 1
@@ -60,12 +60,14 @@ Output file [notes.txt.huf]:
 
 Compression complete.
 Saved to: notes.txt.huf
-[Original size, archive size and space saved shown here]
+Original size, archive size, compression ratio and percentage saved are displayed.
 ```
 
 Press Enter to accept a displayed output default. A blank input path cancels the operation. Paths containing spaces are accepted without shell quoting. Selecting `0` or reaching end-of-input exits cleanly.
 
 Existing outputs require confirmation before replacement. The source must never be overwritten by its own operation.
+
+Output symbolic links are rejected. Operations write beside the destination in a temporary directory and rename the completed file into place. On failure, temporary output is removed and an existing destination is preserved.
 
 ## Planned features
 

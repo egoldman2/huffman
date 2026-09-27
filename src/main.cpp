@@ -1,3 +1,7 @@
+#include "file_ops.hpp"
+
+#include <filesystem>
+#include <iomanip>
 #include <iostream>
 #include <string>
 
@@ -25,6 +29,72 @@ void print_menu() {
               << "Choose an option: ";
 }
 
+bool run_file_operation(bool decompressing) {
+    std::cout << "Input file (blank to cancel): ";
+    std::string source;
+    if (!std::getline(std::cin, source)) {
+        return false;
+    }
+    if (source.empty()) {
+        std::cout << "Cancelled.\n";
+        return true;
+    }
+
+    std::string default_output = source + ".huf";
+    if (decompressing) {
+        if (source.size() > 4 && source.substr(source.size() - 4) == ".huf") {
+            default_output = source.substr(0, source.size() - 4);
+        } else {
+            default_output = source + ".out";
+        }
+    }
+
+    std::cout << "Output file [" << default_output << "]: ";
+    std::string destination;
+    if (!std::getline(std::cin, destination)) {
+        return false;
+    }
+    if (destination.empty()) {
+        destination = default_output;
+    }
+
+    bool overwrite = false;
+    if (std::filesystem::exists(destination)) {
+        std::cout << "Output exists. Replace it? [y/N]: ";
+        std::string confirmation;
+        if (!std::getline(std::cin, confirmation)) {
+            return false;
+        }
+        overwrite = confirmation == "y" || confirmation == "Y";
+        if (!overwrite) {
+            std::cout << "Cancelled.\n";
+            return true;
+        }
+    }
+
+    const auto header = decompressing
+        ? huffman::decompress_file(source, destination, overwrite)
+        : huffman::compress_file(source, destination, overwrite);
+
+    std::cout << (decompressing ? "Decompression complete.\n" : "Compression complete.\n")
+              << "Saved to: " << destination << '\n'
+              << "Original size: " << header.original_size << " bytes\n";
+    if (!decompressing) {
+        const auto archive_size = std::filesystem::file_size(destination);
+        std::cout << "Archive size: " << archive_size << " bytes\n";
+        if (header.original_size != 0) {
+            const double ratio = static_cast<double>(archive_size) / header.original_size;
+            std::cout << std::fixed << std::setprecision(2)
+                      << "Compression ratio: " << ratio << '\n'
+                      << "Space saved: " << 100 * (1 - ratio) << "%\n";
+        } else {
+            std::cout << "Compression ratio: N/A (empty input)\n";
+        }
+    }
+
+    return true;
+}
+
 }  // namespace
 
 int main() {
@@ -47,13 +117,33 @@ int main() {
             return 0;
         }
 
-        if (choice == "4") {
-            std::cout << "\nThis is an experimental scaffold; file operations are not implemented yet.\n\n";
-        } else if (choice == "1" || choice == "2" || choice == "3") {
-            // Hint: prompts belong here; Huffman logic belongs in huffman.cpp.
-            std::cout << "\nNot implemented yet.\n\n";
-        } else {
-            std::cout << "\nPlease choose 0, 1, 2, 3, or 4.\n\n";
+        try {
+            if (choice == "1" || choice == "2") {
+                if (!run_file_operation(choice == "2")) {
+                    leave_app_screen();
+                    return 0;
+                }
+            } else if (choice == "4") {
+                std::cout << "Compress creates a .huf archive; decompress restores its original bytes.\n"
+                          << "Enter paths directly, including spaces, without surrounding quotes.\n"
+                          << "Blank input cancels; blank output accepts the displayed default.\n"
+                          << "Existing outputs require confirmation. Small files may grow.\n"
+                          << "Archive inspection is not implemented yet.\n";
+            } else if (choice == "3") {
+                std::cout << "Archive inspection is not implemented yet.\n";
+            } else {
+                std::cout << "Please choose 0, 1, 2, 3, or 4.\n";
+            }
+        } catch (const std::exception& error) {
+            std::cout << "Error: " << error.what() << '\n';
         }
+
+        std::cout << "\nPress Enter to return to the menu...";
+        std::string pause;
+        if (!std::getline(std::cin, pause)) {
+            leave_app_screen();
+            return 0;
+        }
+        clear_terminal();
     }
 }
