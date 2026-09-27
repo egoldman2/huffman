@@ -161,11 +161,9 @@ namespace huffman {
         for (std::size_t i = 0; i < bits.size(); i += 8) {
             // get a "chunk" by extracting from the current index, up to 8 characters
             std::string chunk = bits.substr(i, 8);
+            chunk.append(8 - chunk.size(), '0');
 
-            // this is a little cooked
-            // 1. create a fake byte from between 1-8 bits (bitset appends missing 0s if < 8 bits)
-            // 2. convert the value of the fake byte back to an ordinary number
-            // 3. convert the ordinary number into an actual byte
+            // convert the right-padded eight-bit chunk into a byte.
             packed.push_back(
                 static_cast<unsigned char>(
                     std::bitset<8>(chunk).to_ulong()
