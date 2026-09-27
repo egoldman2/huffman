@@ -1,5 +1,7 @@
 #include "huffman.hpp"
 
+#include <stdexcept>
+
 namespace huffman {
 
     // another namespace for private helper functions 
@@ -150,6 +152,62 @@ namespace huffman {
         }
 
         return bits;
+    }
+
+    std::string decode(
+        const std::string& bits,
+        const std::vector<Node>& tree
+    ) {
+        // variable to store the original bytes
+        std::string output;
+
+        if (tree.empty()) {
+            if (!bits.empty()) {
+                throw std::invalid_argument("cannot decode bits without a tree");
+            }
+            return output;
+        }
+
+        // the root is always the last node stored in the tree
+        const int root_index = static_cast<int>(tree.size()) - 1;
+        int current_index = root_index;
+
+        for (char bit : bits) {
+            if (bit != '0' && bit != '1') {
+                throw std::invalid_argument("encoded bits must contain only 0 or 1");
+            }
+
+            // a single symbol has code 0, but its root has no children to walk to
+            if (tree[root_index].symbol != -1) {
+                if (bit != '0') {
+                    throw std::invalid_argument("a single symbol must use code 0");
+                }
+                output += static_cast<char>(tree[root_index].symbol);
+                continue;
+            }
+
+            // move to the child represented by the current bit
+            if (bit == '0') {
+                current_index = tree[current_index].left;
+            } else {
+                current_index = tree[current_index].right;
+            }
+
+            // reaching a leaf means we have read one complete symbol
+            if (tree[current_index].symbol != -1) {
+                output += static_cast<char>(tree[current_index].symbol);
+
+                // start at the root again to read the next symbol
+                current_index = root_index;
+            }
+        }
+
+        // ending inside the tree means the final symbol is incomplete
+        if (current_index != root_index) {
+            throw std::invalid_argument("encoded bits end with an incomplete symbol");
+        }
+
+        return output;
     }
 
     std::vector<unsigned char> pack_bits(const std::string& bits) {

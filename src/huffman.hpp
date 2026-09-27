@@ -43,6 +43,7 @@ namespace huffman {
     );
 
     // Decode a binary, huffman string, back into data
+    // Uses a tree from create_tree; throws std::invalid_argument for invalid bits
     std::string decode(
         const std::string& bits,
         const std::vector<Node>& tree

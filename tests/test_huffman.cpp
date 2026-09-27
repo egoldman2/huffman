@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 TEST(FrequencyCounting, CountsRawByteValues) {
@@ -75,6 +76,47 @@ TEST(CodeGeneration, CreatesBananaCodes) {
 
 TEST(BitPacking, HandlesEmptyInput) {
     EXPECT_TRUE(huffman::pack_bits("").empty());
+}
+
+TEST(Decoding, RestoresBanana) {
+    std::istringstream input("BANANA");
+    const auto tree = huffman::create_tree(huffman::count_frequencies(input));
+    const auto codes = huffman::create_codes(tree);
+
+    EXPECT_EQ(huffman::decode("100110110", tree), "BANANA");
+    EXPECT_EQ(huffman::decode(huffman::encode("BANANA", codes), tree), "BANANA");
+    EXPECT_TRUE(huffman::decode("", tree).empty());
+}
+
+TEST(Decoding, HandlesEmptyTree) {
+    EXPECT_TRUE(huffman::decode("", {}).empty());
+    EXPECT_THROW(huffman::decode("0", {}), std::invalid_argument);
+}
+
+TEST(Decoding, HandlesOneSymbol) {
+    std::istringstream input("XXXX");
+    const auto tree = huffman::create_tree(huffman::count_frequencies(input));
+
+    EXPECT_EQ(huffman::decode("0000", tree), "XXXX");
+    EXPECT_TRUE(huffman::decode("", tree).empty());
+    EXPECT_THROW(huffman::decode("1", tree), std::invalid_argument);
+}
+
+TEST(Decoding, RestoresRawBytes) {
+    const std::string bytes = {'A', '\0', 'A', static_cast<char>(0xFF)};
+    std::istringstream input(bytes);
+    const auto tree = huffman::create_tree(huffman::count_frequencies(input));
+    const auto codes = huffman::create_codes(tree);
+
+    EXPECT_EQ(huffman::decode(huffman::encode(bytes, codes), tree), bytes);
+}
+
+TEST(Decoding, RejectsInvalidBitsAndIncompleteSymbols) {
+    std::istringstream input("BANANA");
+    const auto tree = huffman::create_tree(huffman::count_frequencies(input));
+
+    EXPECT_THROW(huffman::decode("02", tree), std::invalid_argument);
+    EXPECT_THROW(huffman::decode("1", tree), std::invalid_argument);
 }
 
 TEST(BitPacking, PadsPartialByteOnTheRight) {
