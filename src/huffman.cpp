@@ -232,4 +232,26 @@ namespace huffman {
         return packed;
     }
 
+    std::string unpack_bits(
+        const std::vector<unsigned char>& packed,
+        std::size_t bit_count
+    ) {
+        // variable to store the unpacked bits
+        std::string bits;
+
+        // convert each byte into eight bit characters
+        for (unsigned char byte : packed) {
+            bits += std::bitset<8>(byte).to_string();
+        }
+
+        if (bit_count > bits.size()) {
+            throw std::invalid_argument("bit count exceeds the available packed bits");
+        }
+
+        // remove the extra zeros added when packing the final byte
+        bits.resize(bit_count);
+
+        return bits;
+    }
+
 }

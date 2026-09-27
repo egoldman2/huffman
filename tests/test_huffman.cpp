@@ -131,3 +131,41 @@ TEST(BitPacking, PacksAcrossTwoBytes) {
     EXPECT_EQ(example[0], static_cast<unsigned char>(0xF8));
     EXPECT_EQ(example[1], static_cast<unsigned char>(0x26));
 }
+
+TEST(BitUnpacking, HandlesEmptyInput) {
+    EXPECT_TRUE(huffman::unpack_bits({}, 0).empty());
+}
+
+TEST(BitUnpacking, RemovesPaddingFromPartialByte) {
+    EXPECT_EQ(huffman::unpack_bits({0xA0}, 3), "101");
+}
+
+TEST(BitUnpacking, RestoresFullBytesInOrder) {
+    EXPECT_EQ(huffman::unpack_bits({0xF8, 0x26}, 16), "1111100000100110");
+    EXPECT_EQ(huffman::unpack_bits({0xF8, 0x26}, 15), "111110000010011");
+}
+
+TEST(BitUnpacking, RejectsBitCountsBeyondAvailableData) {
+    EXPECT_THROW(huffman::unpack_bits({}, 1), std::invalid_argument);
+    EXPECT_THROW(huffman::unpack_bits({0xA0}, 9), std::invalid_argument);
+}
+
+TEST(RoundTrip, RestoresInputAfterPackingAndUnpacking) {
+    const std::vector<std::string> examples = {
+        "", "XXXX", "BANANA",
+        std::string{'A', '\0', 'A', static_cast<char>(0xFF)}
+    };
+
+    for (const std::string& original : examples) {
+        SCOPED_TRACE(::testing::PrintToString(original));
+        std::istringstream input(original);
+        const auto tree = huffman::create_tree(huffman::count_frequencies(input));
+        const auto codes = huffman::create_codes(tree);
+        const auto bits = huffman::encode(original, codes);
+        const auto packed = huffman::pack_bits(bits);
+        const auto unpacked = huffman::unpack_bits(packed, bits.size());
+
+        EXPECT_EQ(unpacked, bits);
+        EXPECT_EQ(huffman::decode(unpacked, tree), original);
+    }
+}

@@ -54,4 +54,10 @@ namespace huffman {
         const std::string& bits
     );
 
+    // Unpack bytes into bits, removing padding using the original bit count
+    std::string unpack_bits(
+        const std::vector<unsigned char>& packed,
+        std::size_t bit_count
+    );
+
 }  // namespace huffman
