@@ -1,6 +1,7 @@
 #include "huffman.hpp"
 
 #include <stdexcept>
+#include <limits>
 
 namespace huffman {
 
@@ -38,6 +39,9 @@ namespace huffman {
 
         while (input.get(byte)) {
             const auto symbol = static_cast<unsigned char>(byte);
+            if (frequencies[symbol] == std::numeric_limits<std::uint64_t>::max()) {
+                throw std::overflow_error("byte frequency is too large");
+            }
             ++frequencies[symbol];
         }
 

@@ -19,4 +19,8 @@ namespace huffman {
     // Read and validate the fixed 22-byte header
     ArchiveHeader read_header(std::istream& input);
 
+    // Compress from the current input position; input must support seeking
+    // Output must be a separate stream; errors may leave a partial archive
+    ArchiveHeader compress(std::istream& input, std::ostream& output);
+
 }

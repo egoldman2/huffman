@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <limits>
 
 namespace huffman {
 
@@ -86,6 +87,97 @@ namespace huffman {
         header.symbol_count = static_cast<std::uint16_t>(read_integer(input, 2));
         header.bit_count = read_integer(input, 8);
         validate_header(header);
+
+        return header;
+    }
+
+    ArchiveHeader compress(std::istream& input, std::ostream& output) {
+        // remember where to start again after counting the frequencies
+        const auto start_position = input.tellg();
+        if (start_position == std::streampos(-1)) {
+            throw std::runtime_error("compression requires a readable, seekable input");
+        }
+
+        const auto frequencies = count_frequencies(input);
+        if (input.bad() || !input.eof()) {
+            throw std::runtime_error("could not read the input");
+        }
+
+        ArchiveHeader header;
+        const auto maximum = std::numeric_limits<std::uint64_t>::max();
+        for (auto frequency : frequencies) {
+            if (frequency != 0) {
+                if (frequency > maximum - header.original_size) {
+                    throw std::overflow_error("original size is too large");
+                }
+                header.original_size += frequency;
+                ++header.symbol_count;
+            }
+        }
+
+        const auto tree = create_tree(frequencies);
+        const auto codes = create_codes(tree);
+
+        // work out the payload size before writing the header
+        for (std::size_t symbol = 0; symbol < frequencies.size(); ++symbol) {
+            const auto code_length = codes[symbol].size();
+            if (code_length != 0) {
+                if (frequencies[symbol] > (maximum - header.bit_count) / code_length) {
+                    throw std::overflow_error("encoded bit count is too large");
+                }
+                header.bit_count += frequencies[symbol] * code_length;
+            }
+        }
+
+        // clear EOF from the first pass and return to the original position
+        input.clear();
+        input.seekg(start_position);
+        if (!input) {
+            throw std::runtime_error("could not rewind the input");
+        }
+
+        write_header(output, header);
+        write_tree(output, tree);
+
+        // keep only a small group of pending bits, rather than the whole payload
+        std::string pending_bits;
+        auto remaining = frequencies;
+        char byte = 0;
+        while (input.get(byte)) {
+            const auto symbol = static_cast<unsigned char>(byte);
+            if (remaining[symbol] == 0) {
+                throw std::runtime_error("input frequencies changed during compression");
+            }
+            --remaining[symbol];
+            pending_bits += codes[symbol];
+
+            while (pending_bits.size() >= 8) {
+                const auto packed = pack_bits(pending_bits.substr(0, 8));
+                output.put(static_cast<char>(packed[0]));
+                pending_bits.erase(0, 8);
+                if (!output) {
+                    throw std::runtime_error("could not write the compressed payload");
+                }
+            }
+        }
+
+        if (input.bad() || !input.eof()) {
+            throw std::runtime_error("could not read the input");
+        }
+        for (auto frequency : remaining) {
+            if (frequency != 0) {
+                throw std::runtime_error("input frequencies changed during compression");
+            }
+        }
+
+        // pack_bits adds trailing zero padding to the final partial byte
+        if (!pending_bits.empty()) {
+            const auto packed = pack_bits(pending_bits);
+            output.put(static_cast<char>(packed[0]));
+        }
+        if (!output) {
+            throw std::runtime_error("could not write the compressed payload");
+        }
 
         return header;
     }
