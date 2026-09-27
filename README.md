@@ -9,7 +9,7 @@ A C++17 project for **Programming Assignment 1 — Track B: Implementation and B
 Compile and run directly with a C++17 compiler:
 
 ```sh
-c++ -std=c++17 -Isrc src/main.cpp src/huffman.cpp src/tree_io.cpp -o huff
+c++ -std=c++17 -Isrc src/main.cpp src/huffman.cpp src/tree_io.cpp src/archive.cpp -o huff
 ./huff
 ```
 
@@ -24,7 +24,7 @@ brew install googletest
 Then, from this folder, compile and run the tests with one command:
 
 ```sh
-c++ -std=c++17 -Isrc -I"$(brew --prefix googletest)/include" tests/test_huffman.cpp src/huffman.cpp src/tree_io.cpp -L"$(brew --prefix googletest)/lib" -lgtest_main -lgtest -pthread -o huffman_tests && ./huffman_tests
+c++ -std=c++17 -Isrc -I"$(brew --prefix googletest)/include" tests/test_huffman.cpp tests/test_archive.cpp src/huffman.cpp src/tree_io.cpp src/archive.cpp -L"$(brew --prefix googletest)/lib" -lgtest_main -lgtest -pthread -o huffman_tests && ./huffman_tests
 ```
 
 GoogleTest runs every test even when one fails and prints the failure reason, time per test and total time automatically.
