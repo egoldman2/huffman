@@ -4,10 +4,18 @@
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <streambuf>
 
 namespace huffman {
 
     namespace {
+        // let the existing decoder validate bytes without saving them anywhere
+        class DiscardBuffer : public std::streambuf {
+            int_type overflow(int_type byte) override {
+                return traits_type::not_eof(byte);
+            }
+        };
+
         void check_destination(
             const std::filesystem::path& source,
             const std::filesystem::path& destination,
@@ -110,6 +118,20 @@ namespace huffman {
         bool overwrite
     ) {
         return process_file(source, destination, overwrite, true);
+    }
+
+    ArchiveHeader inspect_file(const std::filesystem::path& source) {
+        if (!std::filesystem::is_regular_file(source)) {
+            throw std::runtime_error("input must be an existing regular file");
+        }
+        std::ifstream input(source, std::ios::binary);
+        if (!input) {
+            throw std::runtime_error("could not open the archive");
+        }
+
+        DiscardBuffer buffer;
+        std::ostream discarded_output(&buffer);
+        return decompress(input, discarded_output);
     }
 
 }

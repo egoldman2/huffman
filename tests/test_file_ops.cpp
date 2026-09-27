@@ -123,6 +123,52 @@ TEST_F(FileOperations, RemovesPartialRestorationAfterTruncatedPayload) {
     expect_no_temporary_files();
 }
 
+TEST_F(FileOperations, InspectsMetadataWithoutChangingOrExtractingFiles) {
+    const auto source = directory / "input";
+    const auto archive = directory / "input.huf";
+    write(source, "BANANA");
+    huffman::compress_file(source, archive);
+    const auto before = read(archive);
+
+    const auto header = huffman::inspect_file(archive);
+
+    EXPECT_EQ(header.original_size, std::uint64_t{6});
+    EXPECT_EQ(header.symbol_count, std::uint16_t{3});
+    EXPECT_EQ(header.bit_count, std::uint64_t{9});
+    EXPECT_EQ(std::filesystem::file_size(archive), std::uintmax_t{32});
+    EXPECT_EQ(read(archive), before);
+    EXPECT_EQ(std::distance(std::filesystem::directory_iterator(directory),
+                            std::filesystem::directory_iterator{}), 2);
+}
+
+TEST_F(FileOperations, InspectsEmptyArchives) {
+    const auto source = directory / "empty";
+    const auto archive = directory / "empty.huf";
+    write(source, "");
+    huffman::compress_file(source, archive);
+    const auto header = huffman::inspect_file(archive);
+
+    EXPECT_EQ(header.original_size, std::uint64_t{0});
+    EXPECT_EQ(header.symbol_count, std::uint16_t{0});
+    EXPECT_EQ(header.bit_count, std::uint64_t{0});
+    EXPECT_EQ(std::filesystem::file_size(archive), std::uintmax_t{22});
+}
+
+TEST_F(FileOperations, InspectionRejectsMissingFilesAndMalformedPayloads) {
+    const auto source = directory / "input";
+    const auto archive = directory / "input.huf";
+    EXPECT_THROW(huffman::inspect_file(archive), std::runtime_error);
+    write(source, "BANANA");
+    huffman::compress_file(source, archive);
+    auto bytes = read(archive);
+    bytes.pop_back();
+    write(archive, bytes);
+
+    EXPECT_THROW(huffman::inspect_file(archive), std::runtime_error);
+    EXPECT_EQ(read(archive), bytes);
+    expect_no_temporary_files();
+}
+
 TEST_F(FileOperations, RejectsMissingInputAndInvalidDestinations) {
     const auto source = directory / "input";
     const auto destination = directory / "output";

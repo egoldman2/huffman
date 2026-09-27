@@ -29,6 +29,45 @@ void print_menu() {
               << "Choose an option: ";
 }
 
+void print_archive_statistics(const huffman::ArchiveHeader& header, std::uintmax_t archive_size) {
+    const auto payload_bytes = header.bit_count / 8 + (header.bit_count % 8 != 0);
+    const auto tree_bytes = header.symbol_count == 0 ? 0 : 3 * header.symbol_count - 1;
+
+    std::cout << "Format: HUF1\n"
+              << "Original size: " << header.original_size << " bytes\n"
+              << "Archive size: " << archive_size << " bytes\n"
+              << "Symbols: " << header.symbol_count << '\n'
+              << "Header and tree: " << 22 + tree_bytes << " bytes\n"
+              << "Payload: " << header.bit_count << " bits (" << payload_bytes << " bytes)\n";
+
+    if (header.original_size != 0) {
+        const double ratio = static_cast<double>(archive_size) / header.original_size;
+        std::cout << std::fixed << std::setprecision(2)
+                  << "Compression ratio: " << ratio << '\n'
+                  << "Space saved: " << 100 * (1 - ratio) << "%\n";
+    } else {
+        std::cout << "Compression ratio: N/A (empty input)\n"
+                  << "Space saved: N/A (empty input)\n";
+    }
+}
+
+bool inspect_archive() {
+    std::cout << "Archive file (blank to cancel): ";
+    std::string source;
+    if (!std::getline(std::cin, source)) {
+        return false;
+    }
+    if (source.empty()) {
+        std::cout << "Cancelled.\n";
+        return true;
+    }
+
+    const auto header = huffman::inspect_file(source);
+    print_archive_statistics(header, std::filesystem::file_size(source));
+    std::cout << "Archive structure and payload validated; no file was extracted.\n";
+    return true;
+}
+
 bool run_file_operation(bool decompressing) {
     std::cout << "Input file (blank to cancel): ";
     std::string source;
@@ -77,19 +116,11 @@ bool run_file_operation(bool decompressing) {
         : huffman::compress_file(source, destination, overwrite);
 
     std::cout << (decompressing ? "Decompression complete.\n" : "Compression complete.\n")
-              << "Saved to: " << destination << '\n'
-              << "Original size: " << header.original_size << " bytes\n";
+              << "Saved to: " << destination << '\n';
     if (!decompressing) {
-        const auto archive_size = std::filesystem::file_size(destination);
-        std::cout << "Archive size: " << archive_size << " bytes\n";
-        if (header.original_size != 0) {
-            const double ratio = static_cast<double>(archive_size) / header.original_size;
-            std::cout << std::fixed << std::setprecision(2)
-                      << "Compression ratio: " << ratio << '\n'
-                      << "Space saved: " << 100 * (1 - ratio) << "%\n";
-        } else {
-            std::cout << "Compression ratio: N/A (empty input)\n";
-        }
+        print_archive_statistics(header, std::filesystem::file_size(destination));
+    } else {
+        std::cout << "Original size: " << header.original_size << " bytes\n";
     }
 
     return true;
@@ -128,9 +159,13 @@ int main() {
                           << "Enter paths directly, including spaces, without surrounding quotes.\n"
                           << "Blank input cancels; blank output accepts the displayed default.\n"
                           << "Existing outputs require confirmation. Small files may grow.\n"
-                          << "Archive inspection is not implemented yet.\n";
+                          << "Inspect validates an archive and shows its sizes without extracting a file.\n"
+                          << "HUF1 has no checksum; some payload corruption may go undetected.\n";
             } else if (choice == "3") {
-                std::cout << "Archive inspection is not implemented yet.\n";
+                if (!inspect_archive()) {
+                    leave_app_screen();
+                    return 0;
+                }
             } else {
                 std::cout << "Please choose 0, 1, 2, 3, or 4.\n";
             }

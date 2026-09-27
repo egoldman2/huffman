@@ -2,7 +2,7 @@
 
 A C++17 project for **Programming Assignment 1 — Track B: Implementation and Building Something**. Implement Huffman coding and use it to build a lossless file compressor with a basic interactive command-line interface.
 
-**Status:** file compression and decompression work through the menu, with overwrite confirmation and temporary-output protection. Archive inspection is not implemented yet; benchmarks and submission documentation remain unfinished.
+**Status:** file compression, decompression and archive inspection work through the menu, with overwrite confirmation and temporary-output protection. Benchmarks and submission documentation remain unfinished.
 
 ## Build and run
 
@@ -49,7 +49,9 @@ Huffman File Compressor
 Choose an option:
 ```
 
-Compression and decompression prompt for input and output paths. After completion or a recoverable error, press Enter to return to the menu. Option `3` is still a placeholder.
+Compression and decompression prompt for input and output paths. Option `3` prompts for an archive path and displays its format, original/archive sizes, symbol count, header/tree size, payload size and compression statistics. After completion or a recoverable error, press Enter to return to the menu.
+
+Inspection validates the full archive through the decoder, discarding restored bytes without creating an output file. HUF1 has no checksum: corruption that still decodes into the expected number of bytes may go undetected. Inspection time therefore depends on the payload size.
 
 ### Example interaction
 

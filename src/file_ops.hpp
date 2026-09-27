@@ -19,4 +19,7 @@ namespace huffman {
         bool overwrite = false
     );
 
+    // Validate an archive and return its metadata without creating output files
+    ArchiveHeader inspect_file(const std::filesystem::path& source);
+
 }
