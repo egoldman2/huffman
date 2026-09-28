@@ -2,7 +2,7 @@
 
 A C++17 project for **Programming Assignment 1 — Track B: Implementation and Building Something**. Implement Huffman coding and use it to build a lossless file compressor with a basic interactive command-line interface.
 
-**Status:** file compression, decompression and archive inspection work through the menu, with overwrite confirmation and temporary-output protection. Benchmarks and submission documentation remain unfinished.
+**Status:** file compression, decompression and archive inspection work through the menu, with overwrite confirmation and temporary-output protection. A gzip comparison harness is available; evaluation analysis and submission documentation remain unfinished.
 
 ## Build and run
 
@@ -30,6 +30,17 @@ c++ -std=c++17 -Isrc -I"$(brew --prefix googletest)/include" tests/test_huffman.
 ```
 
 GoogleTest runs every test even when one fails and prints the failure reason, time per test and total time automatically.
+
+## Compare against gzip
+
+```sh
+python3 bench/compare.py
+```
+
+This benchmarks the six real-world samples with an optimized Huffman build and
+gzip, verifies exact restoration, prints median times and saves raw results to
+`bench/results.csv`. See [the benchmark instructions](bench/README.md) for options
+and measurement details.
 
 ## Interface
 
