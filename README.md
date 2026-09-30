@@ -84,19 +84,6 @@ Existing outputs require confirmation before replacement. The source must never 
 
 Output symbolic links are rejected. Operations write beside the destination in a temporary directory and rename the completed file into place. On failure, temporary output is removed and an existing destination is preserved.
 
-## Planned features
-
-- Compress and decompress arbitrary binary files, including text and UTF-8.
-- Restore the exact original bytes.
-- Store the Huffman tree and decoding metadata inside each archive.
-- Pack encoded bits into bytes.
-- Show original size, archive size, compression ratio and percentage saved.
-- Inspect archive metadata without extracting its contents.
-- Handle empty files, single-symbol files, invalid input and malformed archives.
-- Preserve inputs and clean up incomplete output after failures.
-
-Compression can increase file size when metadata outweighs payload savings. Statistics will report expansion honestly.
-
 ## Approach
 
 Count byte frequencies, repeatedly merge the two least frequent trees, and assign codes from root-to-leaf paths. Write the tree and packed payload into the archive. Decompression reconstructs the tree and follows the bits to recover the original bytes.
